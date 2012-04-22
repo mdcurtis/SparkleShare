@@ -83,7 +83,7 @@ namespace SparkleShare {
 
         public event OnErrorHandler OnError;
         public delegate void OnErrorHandler ();
-
+		
         public event InviteReceivedHandler InviteReceived;
         public delegate void InviteReceivedHandler (SparkleInvite invite);
 
@@ -717,7 +717,46 @@ namespace SparkleShare {
         {
             OpenFolder (new SparkleFolder (name).FullPath);
         }
+		
+		public virtual void FetchInviteFromURL( string url )
+		{
+			string realUrl = url.Replace( "sparkleshare://", "https://" );
 
+			SparkleInvite invite = null;
+
+			try {
+				HttpWebRequest request = (HttpWebRequest) WebRequest.Create( realUrl );
+				
+				HttpWebResponse response = (HttpWebResponse) request.GetResponse();
+				
+				if( response.StatusCode == System.Net.HttpStatusCode.OK ) {
+					StreamReader reader = new StreamReader( response.GetResponseStream() );
+					
+					invite = new SparkleInvite( reader );
+					
+					reader.Close ();
+				} else {
+					AlertNotificationRaised( "Error fetching invite", "Unable to download invite from " + url );
+				}
+				
+				response.Close();
+			}
+			catch( System.Net.WebException ex ) {
+				if ( AlertNotificationRaised != null ) {
+					AlertNotificationRaised( "Error fetching invite", "An error occurred while trying to download the invite.  " +
+					                        "Most likely this is caused by an invalid SSL certificate." +
+					                        "(System Error was: " + ex.Message + ")" );
+				}
+			}
+			
+			if( invite != null ) {
+				if( invite.IsValid ) {
+					Program.Controller.InviteReceived( invite );
+				} else {
+					AlertNotificationRaised( "Malformed invite", "The invite appears to be corrupted or malformed, sorry!" );
+				}
+			}
+		}
         
         // Adds the user's SparkleShare key to the ssh-agent,
         // so all activity is done with this key

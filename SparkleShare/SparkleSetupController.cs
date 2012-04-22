@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -145,8 +146,7 @@ namespace SparkleShare {
             }
 
             SelectedPlugin = Plugins [0];
-
-
+			
             Program.Controller.InviteReceived += delegate (SparkleInvite invite) {
                 PendingInvite = invite;
 

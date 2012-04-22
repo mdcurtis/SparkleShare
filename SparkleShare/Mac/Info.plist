@@ -18,5 +18,16 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>SparkleShareInviteOpener</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>sparkleshare</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

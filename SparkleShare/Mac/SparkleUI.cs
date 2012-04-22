@@ -110,9 +110,8 @@ namespace SparkleShare {
         private void ShowDockIcon ()
         {
             NSApplication.SharedApplication.ActivationPolicy = NSApplicationActivationPolicy.Regular;
-        }
-
-
+        }		
+		
         [Export("registrationDictionaryForGrowl")]
         NSDictionary RegistrationDictionaryForGrowl ()
         {
@@ -131,7 +130,31 @@ namespace SparkleShare {
                 NSApplication.SharedApplication.DockTile.BadgeLabel = null;
             }
         }
-
+		
+		// The following two functions are based on example code in monodoc
+		public override void WillFinishLaunching(NSNotification notification)
+		{
+			var selector = new MonoMac.ObjCRuntime.Selector( "handleSparkleURL:withReplyEvent:" );
+			NSAppleEventManager.SharedAppleEventManager.SetEventHandler (this,
+            	selector, AEEventClass.Internet, AEEventID.GetUrl);
+		}
+		
+		
+		[Export("handleSparkleURL:withReplyEvent:")]
+		public void HandleGetURLEvent (NSAppleEventDescriptor appleEvent,
+        	NSAppleEventDescriptor reply)
+		{			
+			// Received event is a list (1-based) of URL strings
+			for (int i = 1; i <= appleEvent.NumberOfItems; i++) {
+				NSAppleEventDescriptor innerDesc = appleEvent.DescriptorAtIndex (i);
+				
+				string url = innerDesc.StringValue;
+				
+				if( url != null ) {
+					Program.Controller.FetchInviteFromURL( url );
+				}
+			}
+		}
 
         public override void WillTerminate (NSNotification notification)
         {

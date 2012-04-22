@@ -45,40 +45,32 @@ namespace SparkleShare {
         public SparkleInvite (string xml_file_path)
         {
             XmlDocument xml_document = new XmlDocument ();
-            XmlNode node;
-
-            string address           = "";
-            string remote_path       = "";
-            string accept_url        = "";
-            string announcements_url = "";
-            string fingerprint       = "";
-
-            try {
-                xml_document.Load (xml_file_path);
-
-                node = xml_document.SelectSingleNode ("/sparkleshare/invite/address/text()");
-                if (node != null) { address = node.Value; }
-
-                node = xml_document.SelectSingleNode ("/sparkleshare/invite/remote_path/text()");
-                if (node != null) { remote_path = node.Value; }
-
-                node = xml_document.SelectSingleNode ("/sparkleshare/invite/accept_url/text()");
-                if (node != null) { accept_url = node.Value; }
-
-                node = xml_document.SelectSingleNode ("/sparkleshare/invite/announcements_url/text()");
-                if (node != null) { announcements_url = node.Value; }
-
-                node = xml_document.SelectSingleNode ("/sparkleshare/invite/fingerprint/text()");
-                if (node != null) { fingerprint = node.Value; }
-
-                Initialize (address, remote_path, accept_url, announcements_url, fingerprint);
+   
+			try {
+	        	xml_document.Load (xml_file_path);
+				
+				ParseXML ( xml_document );
+				
+            } catch (XmlException e) {
+                SparkleHelpers.DebugInfo ("Invite", "Invalid XML: " + e.Message);
+                return;
+            }
+        }
+		
+		 public SparkleInvite ( StreamReader reader )
+        {
+            XmlDocument xml_document = new XmlDocument ();
+   
+			try {
+	        	xml_document.Load( reader );
+				
+				ParseXML ( xml_document );
 
             } catch (XmlException e) {
                 SparkleHelpers.DebugInfo ("Invite", "Invalid XML: " + e.Message);
                 return;
             }
         }
-
 
         public bool Accept ()
         {
@@ -117,7 +109,35 @@ namespace SparkleShare {
                 return false;
             }
         }
+		
+		private void ParseXML( XmlDocument xml_document )
+		{
+			XmlNode node;
 
+            string address           = "";
+            string remote_path       = "";
+            string accept_url        = "";
+            string announcements_url = "";
+            string fingerprint       = "";
+
+           	node = xml_document.SelectSingleNode ("/sparkleshare/invite/address/text()");
+            if (node != null) { address = node.Value; }
+
+            node = xml_document.SelectSingleNode ("/sparkleshare/invite/remote_path/text()");
+            if (node != null) { remote_path = node.Value; }
+
+            node = xml_document.SelectSingleNode ("/sparkleshare/invite/accept_url/text()");
+            if (node != null) { accept_url = node.Value; }
+
+            node = xml_document.SelectSingleNode ("/sparkleshare/invite/announcements_url/text()");
+            if (node != null) { announcements_url = node.Value; }
+
+            node = xml_document.SelectSingleNode ("/sparkleshare/invite/fingerprint/text()");
+            if (node != null) { fingerprint = node.Value; }
+
+            Initialize (address, remote_path, accept_url, announcements_url, fingerprint);
+		}
+	
 
         private void Initialize (string address, string remote_path,
             string accept_url, string announcements_url, string fingerprint)
