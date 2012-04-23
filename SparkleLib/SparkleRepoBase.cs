@@ -153,11 +153,20 @@ namespace SparkleLib {
 		}
 
 
-        public SparkleRepoBase (string path)
+        public SparkleRepoBase (string name )
         {
-            LocalPath = path;
-            Name      = Path.GetFileName (LocalPath);
+			Name      = name;
+            //LocalPath = path;
+            //Name      = Path.GetFileName (LocalPath);
             Url       = new Uri (SparkleConfig.DefaultConfig.GetUrlForFolder (Name));
+			
+			string custom_path = SparkleConfig.DefaultConfig.GetFolderOptionalAttribute (Name, "path");
+
+            if (custom_path != null)
+                LocalPath = Path.Combine (custom_path, Name);
+            else
+                LocalPath = Path.Combine (SparkleConfig.DefaultConfig.FoldersPath, Name);
+            
 
             this.poll_interval = this.short_interval;
 
@@ -214,7 +223,6 @@ namespace SparkleLib {
             this.remote_timer.Start ();
             this.local_timer.Start ();
         }
-
 
         protected void OnConflictResolved ()
         {

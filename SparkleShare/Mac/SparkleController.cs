@@ -78,28 +78,35 @@ namespace SparkleShare {
                     return;
 
                 string repo_name;
-
-                if (path.Contains ("/"))
-                    repo_name = path.Substring (0, path.IndexOf ("/"));
-                else
-                    repo_name = path;
-
+				string full_path = Path.Combine( SparkleConfig.DefaultConfig.FoldersPath, path );
+				SparkleRepoBase change_repo = null;
+				
+				foreach (SparkleRepoBase repo in Repositories) {
+					if( full_path.StartsWith( repo.LocalPath ) ) {
+						change_repo = repo;
+						
+						break;
+					}
+				}
+				
+				if( change_repo == null ) {
+					return;
+				}
+				
                 // Ignore changes in the root of each subfolder, these
                 // are already handled by the repository
-                if (Path.GetFileNameWithoutExtension (path).Equals (repo_name))
+                if (path.Equals (change_repo.LocalPath))
                     return;
-
-                repo_name = repo_name.Trim ("/".ToCharArray ());
+				
                 FileSystemEventArgs fse_args = new FileSystemEventArgs (
                     WatcherChangeTypes.Changed,
-                    Path.Combine (SparkleConfig.DefaultConfig.FoldersPath, path),
+                    full_path,
                     Path.GetFileName (path)
                 );
+				
+				System.Console.WriteLine( "On file activity for " + change_repo.Name );
 
-                foreach (SparkleRepoBase repo in Repositories) {
-                    if (repo.Name.Equals (repo_name))
-                        repo.OnFileActivity (fse_args);
-                }
+                change_repo.OnFileActivity (fse_args);
             };
         }
 

@@ -25,7 +25,7 @@ namespace SparkleLib.Git {
 
     public class SparkleRepo : SparkleRepoBase {
 
-        public SparkleRepo (string path) : base (path)
+        public SparkleRepo (string name) : base (name)
         {
         }
 
@@ -637,7 +637,7 @@ namespace SparkleLib.Git {
                 if (match.Success) {
                     SparkleChangeSet change_set = new SparkleChangeSet ();
 
-                    change_set.Folder    = new SparkleFolder (Name);
+                    change_set.Repository= Name;
                     change_set.Revision  = match.Groups [1].Value;
                     change_set.User      = new SparkleUser (match.Groups [2].Value, match.Groups [3].Value);
                     change_set.IsMagical = is_merge_commit;

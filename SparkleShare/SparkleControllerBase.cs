@@ -300,11 +300,11 @@ namespace SparkleShare {
             if (name == null)
                 return GetLog ();
 
-            string path  = new SparkleFolder (name).FullPath;
+            
             int log_size = 50;
 
             foreach (SparkleRepoBase repo in Repositories) {
-                if (repo.LocalPath.Equals (path))
+                if (repo.Name.Equals (name))
                     return repo.GetChangeSets (log_size);
             }
 
@@ -341,7 +341,7 @@ namespace SparkleShare {
                         foreach (SparkleChangeSet existing_set in stored_activity_day) {
                             if (change_set.User.Name.Equals (existing_set.User.Name) &&
                                 change_set.User.Email.Equals (existing_set.User.Email) &&
-                                change_set.Folder.FullPath.Equals (existing_set.Folder.FullPath)) {
+                                change_set.Repository.Equals (existing_set.Repository)) {
 
                                 existing_set.Added.AddRange (change_set.Added);
                                 existing_set.Edited.AddRange (change_set.Edited);
@@ -406,7 +406,7 @@ namespace SparkleShare {
                         if (change_set.Added.Count > 0) {
                             foreach (string file_path in change_set.Added) {
                                 event_entry += "<dd class='document added'>";
-                                event_entry += FormatBreadCrumbs (change_set.Folder.FullPath, file_path);
+                                event_entry += FormatBreadCrumbs (change_set.Repository, file_path);
                                 event_entry += "</dd>";
                             }
                         }
@@ -414,7 +414,7 @@ namespace SparkleShare {
                         if (change_set.Edited.Count > 0) {
                             foreach (string file_path in change_set.Edited) {
                                 event_entry += "<dd class='document edited'>";
-                                event_entry += FormatBreadCrumbs (change_set.Folder.FullPath, file_path);
+                                event_entry += FormatBreadCrumbs (change_set.Repository, file_path);
                                 event_entry += "</dd>";
                             }
                         }
@@ -422,7 +422,7 @@ namespace SparkleShare {
                         if (change_set.Deleted.Count > 0) {
                             foreach (string file_path in change_set.Deleted) {
                                 event_entry += "<dd class='document deleted'>";
-                                event_entry += FormatBreadCrumbs (change_set.Folder.FullPath, file_path);
+                                event_entry += FormatBreadCrumbs (change_set.Repository, file_path);
                                 event_entry += "</dd>";
                             }
                         }
@@ -432,9 +432,9 @@ namespace SparkleShare {
                             foreach (string file_path in change_set.MovedFrom) {
                                 string to_file_path = change_set.MovedTo [i];
 								event_entry += "<dd class='document moved'>";
-                                event_entry += FormatBreadCrumbs (change_set.Folder.FullPath, file_path);
+                                event_entry += FormatBreadCrumbs (change_set.Repository, file_path);
                                 event_entry += "<br>";
-                                event_entry += FormatBreadCrumbs (change_set.Folder.FullPath, to_file_path);
+                                event_entry += FormatBreadCrumbs (change_set.Repository, to_file_path);
                                 event_entry += "</dd>";
 
                                 i++;
@@ -464,10 +464,10 @@ namespace SparkleShare {
                         .Replace ("<!-- $event-user-name -->", change_set.User.Name)
                         .Replace ("<!-- $event-avatar-url -->", change_set_avatar)
                         .Replace ("<!-- $event-time -->", timestamp)
-                        .Replace ("<!-- $event-folder -->", change_set.Folder.Name)
+                        .Replace ("<!-- $event-folder -->", change_set.Repository)
                         .Replace ("<!-- $event-url -->", change_set.Url.ToString ())
                         .Replace ("<!-- $event-revision -->", change_set.Revision)
-                        .Replace ("<!-- $event-folder-color -->", AssignColor (change_set.Folder.Name));
+                        .Replace ("<!-- $event-folder-color -->", AssignColor (change_set.Repository));
                 }
 
                 string day_entry   = "";
@@ -554,23 +554,36 @@ namespace SparkleShare {
 
 
         // Adds a repository to the list of repositories
-        private void AddRepository (string folder_path)
+        private bool AddRepository (string folder_name)
         {
             SparkleRepoBase repo = null;
-            string folder_name   = Path.GetFileName (folder_path);
+            //string folder_name   = Path.GetFileName (folder_path);
+			string custom_path   = SparkleConfig.DefaultConfig.GetFolderOptionalAttribute ( folder_name, "path");
+			string folder_path   = null;
             string backend       = SparkleConfig.DefaultConfig.GetBackendForFolder (folder_name);
-
+			
+            if (custom_path != null)
+                folder_path = Path.Combine (custom_path, folder_name );
+            else
+                folder_path = Path.Combine (SparkleConfig.DefaultConfig.FoldersPath, folder_name );
+			
+			if( !Directory.Exists( folder_path ) ) {
+				// Permanent failure
+				return false;
+			}
+			
             try {
                 repo = (SparkleRepoBase) Activator.CreateInstance (
                     Type.GetType ("SparkleLib." + backend + ".SparkleRepo, SparkleLib." + backend),
-                        folder_path
+                        folder_name
                 );
 
             } catch {
                 SparkleHelpers.DebugInfo ("Controller",
                     "Failed to load \"" + backend + "\" backend for \"" + folder_name + "\"");
-
-                return;
+				
+				// Return true as it's not a permanent failure - we shouldn't delete the configuration, just leave it disabled
+                return true;
             }
 
 
@@ -617,6 +630,8 @@ namespace SparkleShare {
             }
 
             repo.Initialize ();
+			
+			return true;
         }
 
 
@@ -649,12 +664,9 @@ namespace SparkleShare {
         private void PopulateRepositories ()
         {
             foreach (string folder_name in SparkleConfig.DefaultConfig.Folders) {
-                string folder_path = new SparkleFolder (folder_name).FullPath;
-
-                if (Directory.Exists (folder_path))
-                    AddRepository (folder_path);
-                else
-                    SparkleConfig.DefaultConfig.RemoveFolder (folder_name);
+                if( !AddRepository (folder_name) ) {
+	                SparkleConfig.DefaultConfig.RemoveFolder (folder_name);
+				}
             }
 
             if (FolderListChanged != null)
@@ -713,14 +725,14 @@ namespace SparkleShare {
         }
 
 
-        public void OpenSparkleShareFolder (string name)
+        public void OpenSparkleShareFolder (SparkleRepoBase repo )
         {
-            OpenFolder (new SparkleFolder (name).FullPath);
+            OpenFolder ( repo.LocalPath );
         }
 		
 		public virtual void FetchInviteFromURL( string url )
 		{
-			string realUrl = url.Replace( "sparkleshare://", "https://" );
+			string realUrl = url.Replace( "sparkleshare://", "http://" );
 
 			SparkleInvite invite = null;
 

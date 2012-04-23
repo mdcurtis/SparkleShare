@@ -221,9 +221,17 @@ namespace SparkleShare {
         }
 
 
-        public void SubfolderClicked (string subfolder)
+        public void SubfolderClicked (string repoName )
         {
-            Program.Controller.OpenSparkleShareFolder (subfolder);
+			System.Console.WriteLine ( "Subfolderclicked" );
+			foreach (SparkleRepoBase repo in Program.Controller.Repositories) {
+				System.Console.WriteLine( repo.Name + " == " + repoName );
+				if( repo.Name == repoName ) {
+            		Program.Controller.OpenSparkleShareFolder( repo );
+					
+					break;
+				}
+			}
         }
 
 

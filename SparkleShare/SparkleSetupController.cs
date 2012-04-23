@@ -500,8 +500,8 @@ namespace SparkleShare {
 
         public void OpenFolderClicked ()
         {
-            Program.Controller.OpenSparkleShareFolder (
-                Path.GetFileName (PreviousPath));
+            /*Program.Controller.OpenSparkleShareFolder (
+                Path.GetFileName (PreviousPath));*/
 
             FinishPageCompleted ();
         }
